@@ -90,6 +90,7 @@ namespace Emby.Server.Implementations.LiveTv.TunerHosts.HdHomerun
             try
             {
                 // send url to start streaming
+                Logger.LogDebug("Requesting live stream from {remote} to {addr}:{port}", remoteAddress, localAddress, localPort);
                 await hdHomerunManager.StartStreaming(
                     remoteAddress,
                     localAddress,
@@ -178,6 +179,8 @@ namespace Emby.Server.Implementations.LiveTv.TunerHosts.HdHomerun
                         var resTask = udpClient.ReceiveAsync();
                         if (await Task.WhenAny(resTask, Task.Delay(30000, linkedSource.Token)).ConfigureAwait(false) != resTask)
                         {
+                            Logger.LogError("Live stream timed out!");
+                            udpClient.Close();
                             resTask.Dispose();
                             break;
                         }
