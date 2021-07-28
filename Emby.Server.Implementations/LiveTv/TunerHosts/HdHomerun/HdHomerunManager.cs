@@ -131,8 +131,9 @@ namespace Emby.Server.Implementations.LiveTv.TunerHosts.HdHomerun
                 await stream.WriteAsync(buffer.AsMemory(0, msgLen), cancellationToken).ConfigureAwait(false);
 
                 int receivedBytes = await stream.ReadAsync(buffer, cancellationToken).ConfigureAwait(false);
+                Array.Resize(ref buffer, receivedBytes);
 
-                return VerifyReturnValueOfGetSet(buffer.AsSpan(receivedBytes), "none");
+                return VerifyReturnValueOfGetSet(buffer, "none");
             }
             finally
             {
@@ -377,7 +378,8 @@ namespace Emby.Server.Implementations.LiveTv.TunerHosts.HdHomerun
                 return false;
             }
 
-            if (BinaryPrimitives.ReadUInt16BigEndian(buffer) != GetSetReply)
+            uint type = BinaryPrimitives.ReadUInt16BigEndian(buffer);
+            if (type != GetSetReply)
             {
                 return false;
             }
