@@ -15,7 +15,6 @@ using System.Threading;
 using System.Threading.Tasks;
 using MediaBrowser.Common;
 using MediaBrowser.Controller.LiveTv;
-using Microsoft.Extensions.Logging;
 
 namespace Emby.Server.Implementations.LiveTv.TunerHosts.HdHomerun
 {
@@ -98,8 +97,6 @@ namespace Emby.Server.Implementations.LiveTv.TunerHosts.HdHomerun
         private IPEndPoint _remoteEndPoint;
 
         private TcpClient _tcpClient;
-
-        private readonly ILogger<MediaInfoController> _logger;
 
         public void Dispose()
         {
