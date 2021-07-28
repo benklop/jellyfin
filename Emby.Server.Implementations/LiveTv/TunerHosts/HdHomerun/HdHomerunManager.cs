@@ -372,9 +372,8 @@ namespace Emby.Server.Implementations.LiveTv.TunerHosts.HdHomerun
 
             uint expected_crc = BinaryPrimitives.ReadUInt32LittleEndian(buffer[^4..]);
             uint computed_crc = Crc32.Compute(buffer[..^4]);
-            if (expected_crc != computed_crc)
+            if (expected_crc != computed_crc && expected_crc != 0)
             {
-                _logger.LogInformation("CRC does not match: {@Expected} != {@Computed}", expected_crc, computed_crc);
                 return false;
             }
 
