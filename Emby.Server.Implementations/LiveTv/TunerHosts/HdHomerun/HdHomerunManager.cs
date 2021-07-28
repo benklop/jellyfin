@@ -15,6 +15,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using MediaBrowser.Common;
 using MediaBrowser.Controller.LiveTv;
+using Microsoft.Extensions.Logging;
 
 namespace Emby.Server.Implementations.LiveTv.TunerHosts.HdHomerun
 {
@@ -97,6 +98,8 @@ namespace Emby.Server.Implementations.LiveTv.TunerHosts.HdHomerun
         private IPEndPoint _remoteEndPoint;
 
         private TcpClient _tcpClient;
+
+        private readonly ILogger<MediaInfoController> _logger;
 
         public void Dispose()
         {
@@ -370,9 +373,11 @@ namespace Emby.Server.Implementations.LiveTv.TunerHosts.HdHomerun
                 return false;
             }
 
-            uint crc = BinaryPrimitives.ReadUInt32LittleEndian(buffer[^4..]);
-            if (crc != Crc32.Compute(buffer[..^4]))
+            uint expected_crc = BinaryPrimitives.ReadUInt32LittleEndian(buffer[^4..]);
+            uint computed_crc = Crc32.Compute(buffer[..^4]);
+            if (expected_crc != computed_crc)
             {
+                _logger.LogInformation("CRC does not match: {@Expected} != {@Computed}", expected_crc, computed_crc);
                 return false;
             }
 
