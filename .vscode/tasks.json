@@ -3,11 +3,13 @@
     "tasks": [
         {
             "label": "build",
-            "command": "dotnet",
+            "command": "${workspaceFolder}/build",
             "type": "process",
             "args": [
-                "build",
-                "${workspaceFolder}/Jellyfin.Server/Jellyfin.Server.csproj"
+                "-p",
+                "linux.amd64",
+                "-t",
+                "docker"
             ],
             "problemMatcher": "$msCompile"
         },
@@ -20,6 +22,92 @@
                 "${workspaceFolder}/tests/Jellyfin.Api.Tests/Jellyfin.Api.Tests.csproj"
             ],
             "problemMatcher": "$msCompile"
+        },
+        {
+            "type": "docker-build",
+            "label": "docker-build: debug",
+            "dockerBuild": {
+                "tag": "jellyfin:dev",
+                "dockerfile": "${workspaceFolder}/Dockerfile",
+                "context": "${workspaceFolder}",
+                "pull": true
+            },
+            "netCore": {
+                "appProject": "${workspaceFolder}/Jellyfin.Server/Jellyfin.Server.csproj"
+            }
+        },
+        {
+            "type": "docker-build",
+            "label": "docker-build: release",
+            "dependsOn": [
+                "build"
+            ],
+            "dockerBuild": {
+                "tag": "jellyfin:latest",
+                "dockerfile": "${workspaceFolder}/Dockerfile",
+                "context": "${workspaceFolder}",
+                "pull": true
+            },
+            "netCore": {
+                "appProject": "${workspaceFolder}/Jellyfin.Server/Jellyfin.Server.csproj"
+            }
+        },
+        {
+            "type": "docker-run",
+            "label": "docker-run: debug",
+            "dependsOn": [
+                "docker-build: debug"
+            ],
+            "dockerRun": {
+                "customOptions": "--user 990:990",
+                "network": "host",
+                "volumes": [
+                    {
+                        "localPath": "/etc/mediaserver/jellyfin",
+                        "containerPath": "/config"
+                    },
+                    {
+                        "localPath": "/data_storage/jellyfin_cache",
+                        "containerPath": "/cache"
+                    },
+                    {
+                        "localPath": "/data_storage/media",
+                        "containerPath": "/media"
+                    }
+                ]
+            },
+            "netCore": {
+                "appProject": "${workspaceFolder}/Jellyfin.Server/Jellyfin.Server.csproj",
+                "enableDebugging": true
+            }
+        },
+        {
+            "type": "docker-run",
+            "label": "docker-run: release",
+            "dependsOn": [
+                "docker-build: release"
+            ],
+            "dockerRun": {
+                "customOptions": "--user 990:990",
+                "network": "host",
+                "volumes": [
+                    {
+                        "localPath": "/etc/mediaserver/jellyfin",
+                        "containerPath": "/config"
+                    },
+                    {
+                        "localPath": "/data_storage/jellyfin_cache",
+                        "containerPath": "/cache"
+                    },
+                    {
+                        "localPath": "/data_storage/media",
+                        "containerPath": "/media"
+                    }
+                ]
+            },
+            "netCore": {
+                "appProject": "${workspaceFolder}/Jellyfin.Server/Jellyfin.Server.csproj"
+            }
         }
     ],
     "options": {

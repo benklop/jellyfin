@@ -1,6 +1,7 @@
 {
     "version": "0.2.0",
     "configurations": [
+
         {
             "name": ".NET Core Launch (console)",
             "type": "coreclr",
@@ -14,7 +15,7 @@
             "internalConsoleOptions": "openOnSessionStart",
             "serverReadyAction": {
                 "action": "openExternally",
-                "pattern": "Overriding address\\(es\\) \\'(https?:\\S+)\\'",
+                "pattern": "Overriding address\\(es\\) \\'(https?:\\S+)\\'"
             }
         },
         {
@@ -23,17 +24,40 @@
             "request": "launch",
             "preLaunchTask": "build",
             "program": "${workspaceFolder}/Jellyfin.Server/bin/Debug/net5.0/jellyfin.dll",
-            "args": ["--nowebclient"],
+            "args": [
+                "--nowebclient"
+            ],
             "cwd": "${workspaceFolder}/Jellyfin.Server",
             "console": "internalConsole",
             "stopAtEntry": false,
             "internalConsoleOptions": "openOnSessionStart"
         },
         {
-            "name": ".NET Core Attach",
+            "name": ".NET Core Launch (Docker)",
             "type": "coreclr",
             "request": "attach",
-            "processId": "${command:pickProcess}"
+            "processId": "1",
+            "preLaunchTask": "docker-run: debug",
+            "pipeTransport": {
+                "pipeProgram": "docker",
+                "pipeArgs": [ "exec", "-i", "jellyfin-dev" ],
+                "debuggerPath": "/netcoredbg/netcoredbg",
+                "pipeCwd": "${workspaceRoot}",
+                "quoteArgs": false
+            }
+        },
+        {
+            "name": ".NET Core Attach (Docker)",
+            "type": "coreclr",
+            "request": "attach",
+            "processId": "1",
+            "pipeTransport": {
+                "pipeProgram": "docker",
+                "pipeArgs": [ "exec", "-i", "jellyfin-dev" ],
+                "debuggerPath": "/netcoredbg/netcoredbg",
+                "pipeCwd": "${workspaceRoot}",
+                "quoteArgs": false
+            }
         }
     ],
     "env": {
