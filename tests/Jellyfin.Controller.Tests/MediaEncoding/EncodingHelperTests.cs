@@ -7,7 +7,6 @@ using MediaBrowser.Controller.IO;
 using MediaBrowser.Controller.Library;
 using MediaBrowser.Controller.MediaEncoding;
 using MediaBrowser.Controller.Streaming;
-using MediaBrowser.Model.Configuration;
 using MediaBrowser.Model.Dlna;
 using MediaBrowser.Model.Dto;
 using MediaBrowser.Model.Entities;
@@ -20,6 +19,28 @@ namespace Jellyfin.Controller.Tests.MediaEncoding;
 
 public class EncodingHelperTests
 {
+    [Fact]
+    public void GetAudioEncoder_UsesNativeAacForMultichannelFragmentedMp4Hls()
+    {
+        var state = BuildAudioTranscodeState(TranscodingJobType.Hls);
+        state.OutputAudioChannels = 6;
+        state.BaseRequest = new VideoRequestDto { SegmentContainer = "mp4" };
+
+        var helper = CreateHelper(supportsLibFdk: true);
+
+        Assert.Equal("aac", helper.GetAudioEncoder(state));
+    }
+
+    [Fact]
+    public void GetAudioEncoder_UsesLibFdkForProgressiveTranscode()
+    {
+        var state = BuildAudioTranscodeState(TranscodingJobType.Progressive);
+
+        var helper = CreateHelper(supportsLibFdk: true);
+
+        Assert.Equal("libfdk_aac", helper.GetAudioEncoder(state));
+    }
+
     [Fact]
     public void GetMapArgs_NoSubtitle_ExcludesAllSubs()
     {
@@ -238,10 +259,31 @@ public class EncodingHelperTests
         };
     }
 
-    private static EncodingHelper CreateHelper()
+    private static EncodingJobInfo BuildAudioTranscodeState(TranscodingJobType jobType)
+    {
+        var video = new MediaStream { Index = 0, Type = MediaStreamType.Video, Codec = "h264" };
+        var audio = new MediaStream { Index = 1, Type = MediaStreamType.Audio, Codec = "dts", Channels = 6 };
+        return new EncodingJobInfo(jobType)
+        {
+            MediaSource = new MediaSourceInfo
+            {
+                Container = "mkv",
+                MediaStreams = [video, audio],
+            },
+            VideoStream = video,
+            AudioStream = audio,
+            OutputAudioCodec = "aac",
+            BaseRequest = new VideoRequestDto(),
+            IsVideoRequest = true,
+            IsInputVideo = true,
+        };
+    }
+
+    private static EncodingHelper CreateHelper(bool supportsLibFdk = false)
     {
         var appPaths = Mock.Of<IApplicationPaths>();
         var mediaEncoder = new Mock<IMediaEncoder>();
+        mediaEncoder.Setup(m => m.SupportsEncoder("libfdk_aac")).Returns(supportsLibFdk);
         var subtitleEncoder = new Mock<ISubtitleEncoder>();
         var config = new Mock<IConfiguration>();
         var configurationManager = new Mock<IConfigurationManager>();

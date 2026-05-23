@@ -20,6 +20,7 @@ using Jellyfin.Extensions;
 using MediaBrowser.Common.Configuration;
 using MediaBrowser.Controller.Extensions;
 using MediaBrowser.Controller.IO;
+using MediaBrowser.Controller.Streaming;
 using MediaBrowser.Model.Configuration;
 using MediaBrowser.Model.Dlna;
 using MediaBrowser.Model.Dto;
@@ -761,6 +762,12 @@ namespace MediaBrowser.Controller.MediaEncoding
 
             if (string.Equals(codec, "aac", StringComparison.OrdinalIgnoreCase))
             {
+                // libfdk_aac can emit negative packet durations that break fragmented MP4 HLS muxing.
+                if (PreferNativeAacForFragmentedMp4Hls(state))
+                {
+                    return "aac";
+                }
+
                 // Use Apple's aac encoder if available as it provides best audio quality
                 if (_mediaEncoder.SupportsEncoder("aac_at"))
                 {
@@ -811,6 +818,29 @@ namespace MediaBrowser.Controller.MediaEncoding
             }
 
             return codec.ToLowerInvariant();
+        }
+
+        private static bool PreferNativeAacForFragmentedMp4Hls(EncodingJobInfo state)
+        {
+            if (state.TranscodingType == TranscodingJobType.Progressive)
+            {
+                return false;
+            }
+
+            var channels = state.OutputAudioChannels ?? state.AudioStream?.Channels ?? 0;
+            if (channels <= 2)
+            {
+                return false;
+            }
+
+            if (state.BaseRequest is not StreamingRequestDto streamingRequest)
+            {
+                return false;
+            }
+
+            var segmentContainer = streamingRequest.SegmentContainer;
+            return string.Equals(segmentContainer, "mp4", StringComparison.OrdinalIgnoreCase)
+                || string.Equals(segmentContainer, "fmp4", StringComparison.OrdinalIgnoreCase);
         }
 
         private string GetRkmppDeviceArgs(string alias)
